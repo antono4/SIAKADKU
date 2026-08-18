@@ -3,7 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -58,10 +58,15 @@ export default function StudentDetailPage() {
             <ArrowLeft className="h-4 w-4" /> Kembali
           </Link>
         </Button>
-        <div>
+        <div className="flex-1">
           <h2 className="text-xl font-bold text-slate-900">Detail Mahasiswa</h2>
           <p className="text-sm text-slate-500">{data?.name}</p>
         </div>
+        <Button asChild variant="outline" size="sm">
+          <Link href={`/admin/students/${id}/edit`}>
+            <Pencil className="h-4 w-4" /> Edit
+          </Link>
+        </Button>
       </div>
       <Card>
         <CardHeader>

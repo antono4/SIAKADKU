@@ -14,6 +14,7 @@ import { GradesModule } from './modules/grades/grades.module';
 import { KhsModule } from './modules/khs/khs.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { SettingsModule } from './modules/settings/settings.module';
+import { ExportsModule } from './modules/exports/exports.module';
 import { PaginationService } from './common/pagination.service';
 
 @Module({
@@ -33,6 +34,7 @@ import { PaginationService } from './common/pagination.service';
     KhsModule,
     DashboardModule,
     SettingsModule,
+    ExportsModule,
   ],
   providers: [PaginationService],
 })

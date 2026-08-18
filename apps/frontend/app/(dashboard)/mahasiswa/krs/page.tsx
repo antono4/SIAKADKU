@@ -1,10 +1,14 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import Link from 'next/link';
+import { Plus } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { api } from '@/lib/api';
+import { downloadPdf, openPrintablePdf } from '@/lib/download';
 import { useAuthStore } from '@/lib/auth-store';
 
 interface KrsItem {
@@ -12,7 +16,7 @@ interface KrsItem {
   verified: boolean;
   course: { courseCode: string; courseName: string; sks: number; semester: number };
   schedule: { lecturer: { name: string } | null; classroom: { name: string } | null } | null;
-  academicYear: { code: string; semester: string };
+  academicYear: { id: number; code: string; semester: string };
 }
 
 export default function MahasiswaKrsPage() {
@@ -37,6 +41,27 @@ export default function MahasiswaKrsPage() {
           </p>
         </div>
         <Badge variant="slate">Total {totalSks} SKS</Badge>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => ay && openPrintablePdf(`/exports/krs/${studentId}/pdf?academicYearId=${ay.id}`)}
+          disabled={!ay}
+        >
+          Cetak
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => ay && downloadPdf(`/exports/krs/${studentId}/pdf?academicYearId=${ay.id}`, `KRS-${user?.username ?? ''}`)}
+          disabled={!ay}
+        >
+          Unduh PDF
+        </Button>
+        <Button asChild>
+          <Link href="/mahasiswa/krs/new">
+            <Plus className="h-4 w-4" /> Susun KRS
+          </Link>
+        </Button>
       </div>
       <Card>
         <CardContent className="p-4">

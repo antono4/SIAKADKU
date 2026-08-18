@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { api } from '@/lib/api';
+import { downloadPdf, openPrintablePdf } from '@/lib/download';
 import { useAuthStore } from '@/lib/auth-store';
 
 interface KhsResult {
@@ -61,12 +62,18 @@ export default function MahasiswaKhsPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => {
-              if (activeYear?.id && ayId !== null) setAyId(null);
-              else setAyId(activeYear?.id ?? null);
-            }}
+            onClick={() => targetAy && openPrintablePdf(`/exports/khs/${studentId}/pdf?academicYearId=${targetAy}`)}
+            disabled={!targetAy}
           >
-            {targetAy ? 'Tahun Ajaran Aktif' : 'Pilih Tahun Ajaran'}
+            Cetak
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => targetAy && downloadPdf(`/exports/khs/${studentId}/pdf?academicYearId=${targetAy}`, `KHS-${user?.username ?? ''}`)}
+            disabled={!targetAy}
+          >
+            Unduh PDF
           </Button>
         </div>
       </div>

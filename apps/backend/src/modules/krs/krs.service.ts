@@ -45,7 +45,7 @@ export class KrsService {
       include: {
         course: true,
         schedule: { include: { lecturer: true, classroom: true } },
-        academicYear: true,
+        academicYear: { select: { id: true, code: true, semester: true } },
         studyPoint: true,
       },
       orderBy: { course: { semester: 'asc' } },

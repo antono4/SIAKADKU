@@ -2,12 +2,14 @@
 
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { Download } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { api } from '@/lib/api';
+import { downloadPdf } from '@/lib/download';
 
 interface Grade {
   id: number;
@@ -25,11 +27,17 @@ const GRADE_TONE: Record<string, 'green' | 'default' | 'yellow' | 'red' | 'slate
 };
 
 export default function GradesPage() {
-  const [npm, setNpm] = useState('');
   const [search, setSearch] = useState('');
   const { data, isLoading } = useQuery<Grade[]>({
     queryKey: ['grades'],
     queryFn: () => api.get('/grades'),
+  });
+  // active academic year for CSV export
+  const { data: activeYear } = useQuery<{ id: number } | null>({
+    queryKey: ['active-year'],
+    queryFn: async () => {
+      try { return await api.get('/academic-years/active'); } catch { return null; }
+    },
   });
 
   const filtered = (data ?? []).filter((g) =>
@@ -40,9 +48,18 @@ export default function GradesPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-bold text-slate-900">Daftar Nilai</h2>
-        <p className="text-sm text-slate-500">Pantau nilai seluruh mahasiswa</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-bold text-slate-900">Daftar Nilai</h2>
+          <p className="text-sm text-slate-500">Pantau nilai seluruh mahasiswa</p>
+        </div>
+        <Button
+          variant="outline"
+          disabled={!activeYear}
+          onClick={() => activeYear && downloadPdf(`/exports/grades/csv?academicYearId=${activeYear.id}`, 'data-nilai')}
+        >
+          <Download className="h-4 w-4" /> Export CSV
+        </Button>
       </div>
       <Card>
         <CardContent className="p-4">

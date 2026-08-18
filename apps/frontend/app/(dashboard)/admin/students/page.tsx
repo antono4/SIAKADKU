@@ -1,15 +1,17 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
-import { Plus, Search } from 'lucide-react';
+import { Plus, Search, Pencil, Trash2, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { useToast, ConfirmDialog } from '@/components/ui/toast';
 import { api } from '@/lib/api';
+import { downloadPdf } from '@/lib/download';
 
 interface Student {
   id: number;
@@ -39,8 +41,11 @@ const STATUS_VARIANT: Record<string, 'green' | 'yellow' | 'red' | 'slate'> = {
 };
 
 export default function StudentsPage() {
+  const queryClient = useQueryClient();
+  const toast = useToast();
   const [query, setQuery] = useState('');
   const [page, setPage] = useState(1);
+  const [toDelete, setToDelete] = useState<number | null>(null);
 
   const { data, isLoading } = useQuery<Page>({
     queryKey: ['students', query, page],
@@ -50,6 +55,16 @@ export default function StudentsPage() {
       ),
   });
 
+  const remove = useMutation({
+    mutationFn: (id: number) => api.del(`/students/${id}`),
+    onSuccess: () => {
+      toast.success('Mahasiswa dihapus.');
+      setToDelete(null);
+      queryClient.invalidateQueries({ queryKey: ['students'] });
+    },
+    onError: (err) => toast.error((err as Error).message),
+  });
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -57,11 +72,16 @@ export default function StudentsPage() {
           <h2 className="text-xl font-bold text-slate-900">Data Mahasiswa</h2>
           <p className="text-sm text-slate-500">Kelola data mahasiswa</p>
         </div>
-        <Button asChild>
-          <Link href="/admin/students/new">
-            <Plus className="h-4 w-4" /> Tambah Mahasiswa
-          </Link>
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => downloadPdf('/exports/students/csv', 'data-mahasiswa')}>
+            <Download className="h-4 w-4" /> Export CSV
+          </Button>
+          <Button asChild>
+            <Link href="/admin/students/new">
+              <Plus className="h-4 w-4" /> Tambah Mahasiswa
+            </Link>
+          </Button>
+        </div>
       </div>
 
       <Card>
@@ -112,9 +132,24 @@ export default function StudentsPage() {
                     <Badge variant={STATUS_VARIANT[s.status] ?? 'slate'}>{s.status}</Badge>
                   </TableCell>
                   <TableCell>
-                    <Button asChild variant="ghost" size="sm">
-                      <Link href={`/admin/students/${s.id}`}>Detail</Link>
-                    </Button>
+                    <div className="flex gap-1">
+                      <Button asChild variant="ghost" size="sm">
+                        <Link href={`/admin/students/${s.id}`}>Detail</Link>
+                      </Button>
+                      <Button asChild variant="ghost" size="icon" aria-label="Edit">
+                        <Link href={`/admin/students/${s.id}/edit`}>
+                          <Pencil className="h-4 w-4" />
+                        </Link>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label="Hapus"
+                        onClick={() => setToDelete(s.id)}
+                      >
+                        <Trash2 className="h-4 w-4 text-red-600" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -155,6 +190,15 @@ export default function StudentsPage() {
           )}
         </CardContent>
       </Card>
+
+      <ConfirmDialog
+        open={toDelete !== null}
+        onClose={() => setToDelete(null)}
+        onConfirm={() => toDelete && remove.mutate(toDelete)}
+        title="Hapus Mahasiswa"
+        message="Yakin ingin menghapus data mahasiswa ini? Tindakan tidak dapat dibatalkan."
+        loading={remove.isPending}
+      />
     </div>
   );
 }

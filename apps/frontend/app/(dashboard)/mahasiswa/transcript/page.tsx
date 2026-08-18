@@ -4,7 +4,9 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { api } from '@/lib/api';
+import { downloadPdf, openPrintablePdf } from '@/lib/download';
 import { useAuthStore } from '@/lib/auth-store';
 
 interface Transcript {
@@ -46,6 +48,22 @@ export default function MahasiswaTranscriptPage() {
           <p className="text-lg font-bold text-slate-900">
             {data?.totalSks ?? '—'} SKS · <span className="text-green-600">{data?.ipk ?? '—'}</span>
           </p>
+        </div>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => openPrintablePdf(`/exports/transcript/${user?.studentId ?? 0}/pdf`)}
+          >
+            Cetak
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => downloadPdf(`/exports/transcript/${user?.studentId ?? 0}/pdf`, `Transkrip-${user?.username ?? ''}`)}
+          >
+            Unduh PDF
+          </Button>
         </div>
       </div>
 

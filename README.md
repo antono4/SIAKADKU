@@ -18,7 +18,9 @@ responsif berbasis React + Tailwind.
 | Database | MySQL, query builder CI | PostgreSQL + Prisma ORM (type-safe) |
 | Frontend | Server-rendered PHP + AdminLTE + jQuery | Next.js App Router + React + Tailwind |
 | API | Tidak ada (view-driven) | REST API + OpenAPI/Swagger docs |
-| Auth | Session + captcha, satu tipe user | JWT (access+refresh) + RBAC 4 peran |
+| CRUD UI | Server-rendered PHP forms | React form + modal create/edit/delete |
+| Export | print-*.php (HTML print) | PDF (pdfkit) + CSV export endpoints |
+| Auth | Session + captcha, satu tipe user | JWT (access+refresh, auto-refresh) + RBAC 4 peran |
 | Validasi | Form validation CI | Zod schema validation |
 | Deployment | Manual (htdocs) | Docker Compose (postgres + api + web) |
 | Pengujian tipe | — | TypeScript strict end-to-end |
@@ -121,6 +123,7 @@ Semua endpoint berawalan `/api`. Dokumentasi interaktif tersedia di
 | KHS | `GET /khs/student/:id?academicYearId=`, `GET /khs/transcript/:id` |
 | Dashboard | `GET /dashboard`, `GET /dashboard/lecturer`, `GET /dashboard/student` |
 | Settings | `GET/PATCH /settings` |
+| Exports | `GET /exports/krs/:studentId/pdf`, `GET /exports/khs/:studentId/pdf`, `GET /exports/transcript/:studentId/pdf`, `GET /exports/students/csv`, `GET /exports/grades/csv` |
 
 ## 🧮 Sistem penilaian
 

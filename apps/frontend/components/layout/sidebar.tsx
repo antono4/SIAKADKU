@@ -16,6 +16,7 @@ import {
   ClipboardCheck,
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/auth-store';
+import { logout } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import type { UserRole } from '@siakad/shared';
 
@@ -74,13 +75,13 @@ const ROLE_HOME: Record<UserRole, string> = {
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, clear } = useAuthStore();
+  const { user } = useAuthStore();
 
   if (!user) return null;
   const items = NAV_BY_ROLE[user.role] ?? [];
 
-  const handleLogout = () => {
-    clear();
+  const handleLogout = async () => {
+    await logout();
     router.push('/login');
   };
 
