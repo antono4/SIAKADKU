@@ -1,0 +1,21 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# build outputs
+dist/
+.next/
+*.tsbuildinfo
+
+# env
+.env
+.env.local
+*.env
+
+# prisma
+prisma/migrations/dev.db*
+
+# misc
+.DS_Store
+coverage/
+*.log

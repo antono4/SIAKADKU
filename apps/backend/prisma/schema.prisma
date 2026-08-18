@@ -1,0 +1,356 @@
+// Prisma schema for SIAKAD Terpadu v2 (modern edition)
+// Generator: Prisma Client
+// Database: PostgreSQL
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────
+// Auth & RBAC
+// ─────────────────────────────────────────────
+
+model User {
+  id           String    @id @default(cuid())
+  name         String
+  username     String    @unique
+  email        String?   @unique
+  password     String
+  role         UserRole  @default(MAHASISWA)
+  active       Boolean   @default(true)
+  refreshToken String?
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  studentId  Int? @unique
+  lecturerId Int? @unique
+
+  student  Student?  @relation("UserStudent", fields: [studentId], references: [id], onDelete: SetNull)
+  lecturer Lecturer? @relation("UserLecturer", fields: [lecturerId], references: [id], onDelete: SetNull)
+
+  auditLogs   AuditLog[]
+  verifiedKrs PlainStudy[]
+
+  @@index([role])
+  @@map("users")
+}
+
+enum UserRole {
+  ADMIN
+  AKADEMIK
+  DOSEN
+  MAHASISWA
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  userId    String?
+  action    String
+  entity    String?
+  entityId  String?
+  ip        String?
+  userAgent String?
+  payload   Json?
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([entity, entityId])
+  @@map("audit_logs")
+}
+
+// ─────────────────────────────────────────────
+// Master Akademik
+// ─────────────────────────────────────────────
+
+model Concentration {
+  id          Int      @id @default(autoincrement())
+  code        String   @unique
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  students  Student[]
+  courses   Course[]
+  lecturers Lecturer[]
+
+  @@map("concentration")
+}
+
+model Classroom {
+  id        Int      @id @default(autoincrement())
+  code      String   @unique
+  name      String
+  capacity  Int      @default(40)
+  building  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  schedules Schedule[]
+
+  @@map("classroom")
+}
+
+model Lecturer {
+  id              Int      @id @default(autoincrement())
+  lecturerCode    String   @unique
+  nidn            String?  @unique
+  name            String
+  gender          Gender?
+  phone           String?
+  email           String?
+  address         String?
+  status          String   @default("active")
+  concentrationId Int?
+  photo           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  concentration Concentration? @relation(fields: [concentrationId], references: [id], onDelete: SetNull)
+  user          User?          @relation("UserLecturer")
+  schedules     Schedule[]
+  studyPoints   StudyPoint[]
+
+  @@index([concentrationId])
+  @@map("lecturer")
+}
+
+model Student {
+  id              Int           @id @default(autoincrement())
+  npm             String        @unique
+  name            String
+  gender          Gender?
+  placeOfBirth    String?
+  birthDate       DateTime?
+  address         String?
+  phone           String?
+  email           String?
+  photo           String?
+  concentrationId Int?
+  className       String?
+  registerYear    String?
+  entryStatus     String        @default("reguler") // reguler | pindahan
+  status          StudentStatus @default(active)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  concentration Concentration?       @relation(fields: [concentrationId], references: [id], onDelete: SetNull)
+  user          User?                @relation("UserStudent")
+  parents       StudentParent[]
+  originSchool  StudentOriginSchool?
+  plainStudies  PlainStudy[]
+  studyPoints   StudyPoint[]
+
+  @@index([concentrationId])
+  @@index([status])
+  @@index([registerYear])
+  @@map("students")
+}
+
+model StudentParent {
+  id            Int     @id @default(autoincrement())
+  studentId     Int
+  fatherName    String?
+  motherName    String?
+  parentPhone   String?
+  parentAddress String?
+  parentJob     String?
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@map("students_parent")
+}
+
+model StudentOriginSchool {
+  id              Int     @id @default(autoincrement())
+  studentId       Int     @unique
+  schoolName      String?
+  schoolYear      String?
+  major           String?
+  graduationGrade String?
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@map("students_origin_school")
+}
+
+model Course {
+  id                  Int      @id @default(autoincrement())
+  courseCode          String   @unique
+  courseName          String
+  courseNameEnglish   String?
+  sks                 Int      @default(3)
+  semester            Int
+  concentrationId     Int?
+  requirementCourseId Int?
+  description         String?
+  active              Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  concentration     Concentration? @relation(fields: [concentrationId], references: [id], onDelete: SetNull)
+  requirementCourse Course?        @relation("CourseRequirement", fields: [requirementCourseId], references: [id], onDelete: SetNull)
+  requiredBy        Course[]       @relation("CourseRequirement")
+  schedules         Schedule[]
+  plainStudies      PlainStudy[]
+  studyPoints       StudyPoint[]
+
+  @@index([concentrationId])
+  @@index([semester])
+  @@map("course")
+}
+
+model AcademicYear {
+  id        Int      @id @default(autoincrement())
+  code      String   @unique // e.g. "2025/2026"
+  semester  Semester
+  startDate DateTime
+  endDate   DateTime
+  active    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  schedules    Schedule[]
+  plainStudies PlainStudy[]
+  studyPoints  StudyPoint[]
+
+  @@index([active])
+  @@map("academic_year")
+}
+
+enum Semester {
+  ganjil
+  genap
+  pendek
+}
+
+enum Gender {
+  L
+  P
+}
+
+enum StudentStatus {
+  active
+  nonactive
+  graduated
+  drop_out
+}
+
+// ─────────────────────────────────────────────
+// Penjadwalan & KRS / KHS
+// ─────────────────────────────────────────────
+
+model Schedule {
+  id             Int      @id @default(autoincrement())
+  courseId       Int
+  lecturerId     Int?
+  classroomId    Int?
+  day            Day
+  sessionStart   String // "07:30"
+  sessionEnd     String // "09:30"
+  academicYearId Int
+  capacity       Int      @default(40)
+  enrolledCount  Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  course       Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lecturer     Lecturer?    @relation(fields: [lecturerId], references: [id], onDelete: SetNull)
+  classroom    Classroom?   @relation(fields: [classroomId], references: [id], onDelete: SetNull)
+  academicYear AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+  plainStudies PlainStudy[]
+
+  @@unique([courseId, day, sessionStart, academicYearId])
+  @@index([academicYearId])
+  @@index([lecturerId])
+  @@map("lecturer_schedule")
+}
+
+enum Day {
+  senin
+  selasa
+  rabu
+  kamis
+  jumat
+  sabtu
+  minggu
+}
+
+/// KRS line item — a student's plan to take a course in a given academic year.
+model PlainStudy {
+  id             Int       @id @default(autoincrement())
+  studentId      Int
+  courseId       Int
+  scheduleId     Int?
+  academicYearId Int
+  verified       Boolean   @default(false)
+  verifiedById   String?
+  verifiedAt     DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  student      Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  course       Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  schedule     Schedule?    @relation(fields: [scheduleId], references: [id], onDelete: SetNull)
+  academicYear AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+  verifiedBy   User?        @relation(fields: [verifiedById], references: [id], onDelete: SetNull)
+  studyPoint   StudyPoint?
+
+  @@unique([studentId, courseId, academicYearId])
+  @@index([studentId])
+  @@index([academicYearId])
+  @@map("plain_studies")
+}
+
+/// Study point — grades entered by the lecturer, produces KHS.
+model StudyPoint {
+  id             Int      @id @default(autoincrement())
+  studentId      Int
+  courseId       Int
+  lecturerId     Int?
+  academicYearId Int
+  absent         Float    @default(0)
+  task           Float    @default(0)
+  midterms       Float    @default(0)
+  final          Float    @default(0)
+  finalScore     Float?
+  grade          String? // A | B | C | D | E
+  weight         Float? // 4 | 3 | 2 | 1 | 0
+  published      Boolean  @default(false)
+  plainStudyId   Int?     @unique
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  student      Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  course       Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lecturer     Lecturer?    @relation(fields: [lecturerId], references: [id], onDelete: SetNull)
+  academicYear AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+  plainStudy   PlainStudy?  @relation(fields: [plainStudyId], references: [id], onDelete: SetNull)
+
+  @@unique([studentId, courseId, academicYearId])
+  @@index([studentId])
+  @@index([lecturerId])
+  @@index([academicYearId])
+  @@map("study_point")
+}
+
+// ─────────────────────────────────────────────
+// Settings (migrated from tb_options)
+// ─────────────────────────────────────────────
+
+model Option {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  value String
+
+  @@map("tb_options")
+}
